@@ -14,13 +14,9 @@ import logging
 import os
 
 import torch
-from transformers import (
-    pipeline, Pipeline, Conversation, AutoModelForCausalLM,
-    AutoModelForSeq2SeqLM, AutoTokenizer, AutoConfig,
-    AutoModelForSequenceClassification, AutoModelForTokenClassification,
-    AutoModelForQuestionAnswering)
+from transformers import AutoConfig
 
-from djl_python.encode_decode import encode, decode
+from djl_python.encode_decode import decode
 from djl_python.inputs import Input
 from djl_python.outputs import Output
 
@@ -47,7 +43,7 @@ def get_rolling_batch_class_from_str(rolling_batch_type: str, is_mpi: bool,
     return TRTLLMRollingBatch
 
 
-class HuggingFaceService(object):
+class TRTLLMService(object):
     def __init__(self):
         self.initialized = False
         self.model = None
@@ -85,21 +81,6 @@ class HuggingFaceService(object):
             world_size = torch.cuda.device_count()
             assert world_size == tp_degree, f"TP degree ({tp_degree}) doesn't match available GPUs ({world_size})"
             logging.info(f"Using {world_size} gpus")
-        if "load_in_8bit" in properties:
-            if "device_map" not in kwargs:
-                raise ValueError(
-                    "device_map should set when load_in_8bit is set")
-            kwargs["load_in_8bit"] = properties.get(
-                "load_in_8bit").lower() == 'true'
-        if "load_in_4bit" in properties:
-            if "device_map" not in kwargs:
-                raise ValueError(
-                    "device_map should set when load_in_4bit is set")
-            kwargs["load_in_4bit"] = properties.get(
-                "load_in_4bit").lower() == 'true'
-        if "low_cpu_mem_usage" in properties:
-            kwargs["low_cpu_mem_usage"] = properties.get(
-                "low_cpu_mem_usage").lower() == 'true'
 
         if "data_type" in properties:
             kwargs["torch_dtype"] = get_torch_dtype_from_str(
@@ -224,7 +205,7 @@ class HuggingFaceService(object):
                 f"This is required for loading huggingface models")
             raise e
 
-_service = HuggingFaceService()
+_service = TRTLLMService()
 
 def handle(inputs: Input):
     """
