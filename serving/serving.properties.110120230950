@@ -1,6 +1,7 @@
-engine=MPI
+engine=Python
 option.entryPoint=djl_python.trtllm
 option.model_id=/opt/djl/llama-2-7b-hf
+option.tensor_parallel_degree=1
 option.max_rolling_batch_size=32
 option.task=text-generation
 option.rolling_batch=trtllm
