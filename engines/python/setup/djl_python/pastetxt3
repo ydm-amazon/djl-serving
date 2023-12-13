@@ -1,0 +1,26 @@
+mistral
+
+docker run --gpus all --shm-size 1g -p 8080:80 -v /home/ubuntu/mistral_test:/opt/ml/model -v /home/ubuntu/model_server_logs:/opt/djl/logs -e "MODEL_ID=mistralai/Mistral-7B-v0.1" ghcr.io/huggingface/text-generation-inference:1.1.0
+
+docker run --gpus all --shm-size 1g -p 8080:8080 -v /home/ubuntu/mistral_test:/opt/ml/model -v /home/ubuntu/model_server_logs:/opt/djl/logs deepjavalibrary/djl-serving:0.23.0-deepspeed
+
+./awscurl -c 1 -N 10 -X POST http://127.0.0.1:8080/invocations \
+  --connect-timeout 60 \
+  -H "Content-type: application/json" \
+  -d '{"inputs":"The new movie that got Oscar this year","parameters":{"max_new_tokens":256, "do_sample":true}}' \
+  -t \
+  -o aws_1/output.txt
+
+./awscurl -c 4 -N 10 -X POST http://127.0.0.1:8080/invocations \
+  --connect-timeout 60 \
+  -H "Content-type: application/json" \
+  -d '{"inputs":"The new movie that got Oscar this year","parameters":{"max_new_tokens":256, "do_sample":true}}' \
+  -t \
+  -o aws_4/output.txt
+
+./awscurl -c 8 -N 10 -X POST http://127.0.0.1:8080/invocations \
+  --connect-timeout 60 \
+  -H "Content-type: application/json" \
+  -d '{"inputs":"The new movie that got Oscar this year","parameters":{"max_new_tokens":256, "do_sample":true}}' \
+  -t \
+  -o aws_8/output.txt

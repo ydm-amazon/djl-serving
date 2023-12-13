@@ -11,9 +11,9 @@
 # BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, express or implied. See the License for
 # the specific language governing permissions and limitations under the License.
 
-from seq_scheduler.lm_block import HuggingfaceBlock, BloomBlock, FalconBlock
-from seq_scheduler.search_config import SearchConfig
-from seq_scheduler.seq_batch_scheduler import SeqBatchScheduler
+from djl_python.seq_scheduler.lm_block import HuggingfaceBlock, BloomBlock, FalconBlock
+from djl_python.seq_scheduler.search_config import SearchConfig
+from djl_python.seq_scheduler.seq_batch_scheduler import SeqBatchScheduler
 from collections import namedtuple, defaultdict
 from djl_python.rolling_batch.rolling_batch import RollingBatch, stop_on_any_exception
 from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig
