@@ -74,7 +74,12 @@ PEFT_MODEL_TASK_TO_CLS = {
 }
 
 
-def enable_flash():
+def enable_flash() -> bool:
+    """
+    Check if requirements are there to enable flash attention
+
+    :return: True if device supports flash attention, False otherwise
+    """
     if torch.cuda.is_available():
         major, _ = torch.cuda.get_device_capability()
         if major >= 8:
@@ -83,7 +88,16 @@ def enable_flash():
 
 
 def get_rolling_batch_class_from_str(rolling_batch_type: str, is_mpi: bool,
-                                     model_config):
+                                     model_config: "PretrainedConfig") -> "RollingBatch":
+    """
+    Chooses a rolling batcher connected to a specified backend.
+
+    :param rolling_batch_type: specified type of rolling batch
+    :param is_mpi: used to choose between python-based or mpi-based rolling batch for the lmi-dist case
+    :param model_config: a HuggingFace PretrainedConfig containing model details
+
+    :return: a RollingBatch class that can access a specific backend
+    """
     if rolling_batch_type == "auto":
         architecture = model_config.architectures[0]
         if architecture in LMI_DIST_ADV_MODEL and is_mpi:
@@ -105,14 +119,25 @@ def get_rolling_batch_class_from_str(rolling_batch_type: str, is_mpi: bool,
 
 
 class StopWord(StoppingCriteria):
+    """
+    Extension of HF StoppingCriteria that checks for stop sequences in output at character (not token) level
+    """
 
-    def __init__(self, tokenizer, stop_seq):
+    def __init__(self, tokenizer: PreTrainedTokenizerBase, stop_seq: str) -> None:
         StoppingCriteria.__init__(self)
         self.tokenizer = tokenizer
         self.stop_seq = stop_seq
 
     def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor,
-                 **kwargs):
+                 **kwargs) -> bool:
+        """
+        Checks stop sequences at character level (stop-sequences that start mid-token will not be skipped)
+
+        :param input_ids: List of generated tokens
+        :param scores: necessary to override StoppingCriteria __call__
+
+        :return: bool - whether the generated tokens contains the stop sequence
+        """
         decoded_input_ids = self.tokenizer.decode(
             input_ids[0][-len(self.stop_seq):])
 
@@ -125,7 +150,12 @@ class StopWord(StoppingCriteria):
 
 
 class HuggingFaceService(object):
-
+    """
+    A HuggingFaceService is an intermediary for the default HuggingFace handler.
+    Its functions are invoked to turn Inputs into Outputs and it is responsible
+    for sending new requests to a rolling batcher, which can connect to either
+    the lmi-dist or vllm backend.
+    """
     def __init__(self):
         self.hf_pipeline = None
         self.hf_pipeline_unwrapped = None
@@ -395,12 +425,12 @@ class HuggingFaceService(object):
     def get_pipeline(self, task: str, model_id_or_path: str, kwargs):
         # define tokenizer or feature extractor as kwargs to load it the pipeline correctly
         if task in {
-                "automatic-speech-recognition",
-                "image-segmentation",
-                "image-classification",
-                "audio-classification",
-                "object-detection",
-                "zero-shot-image-classification",
+            "automatic-speech-recognition",
+            "image-segmentation",
+            "image-classification",
+            "audio-classification",
+            "object-detection",
+            "zero-shot-image-classification",
         }:
             kwargs["feature_extractor"] = model_id_or_path
 
@@ -418,7 +448,7 @@ class HuggingFaceService(object):
                 )
                 base_model = PEFT_MODEL_TASK_TO_CLS[
                     self.peft_config.task_type].from_pretrained(
-                        self.peft_config.base_model_name_or_path, **kwargs)
+                    self.peft_config.base_model_name_or_path, **kwargs)
                 self.model = PeftModel.from_pretrained(base_model,
                                                        model_id_or_path)
                 if "load_in_8bit" in kwargs or "load_in_4bit" in kwargs:
