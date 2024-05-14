@@ -45,8 +45,11 @@ if __name__ == '__main__':
                 "model_id": model_id,
                 "tensor_parallel_degree": tensor_parallel_degree,
             }
-            model, tp, max_tokens = max_token_finder(properties)
-            output = f"Summary:\nmodel: {model_name}\n tp: {tp}\n max_tokens: {max_tokens}"
+            try:
+                model, tp, max_tokens = max_token_finder(properties)
+                output = f"Summary:\nmodel: {model_name}\n tp: {tp}\n max_tokens: {max_tokens}"
+            except:
+                output = f"Error happened for {model_name} and tp {tp}"
             print(output)
             with open(f"max_num_token_results/{model_name}_{tp}_log.txt",
                       "w") as log_file:
